@@ -27,3 +27,9 @@ This project is a simple client-server messaging application built using Java an
    Run the following command in the project directory:
    ```bash
    mvn clean install
+
+## Demo
+
+Watch a video demonstration of the application in action:
+
+[![Watch the video](https://img.youtube.com/vi/tLww2GRbYEI/0.jpg)](https://www.youtube.com/watch?v=tLww2GRbYEI)
