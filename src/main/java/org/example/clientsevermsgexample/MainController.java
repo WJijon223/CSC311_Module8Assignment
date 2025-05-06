@@ -123,41 +123,32 @@ public class MainController implements Initializable {
     String message;
 
     private void runServer() {
-        try {
-
-            ServerSocket serverSocket = new ServerSocket(6666);
+        try (ServerSocket serverSocket = new ServerSocket(6666)) {
             updateServer("Server is running and waiting for a client...");
-            while (true) { // Infinite loop
-                try {
-                    Socket clientSocket = serverSocket.accept();
-                    updateServer("Client connected!");
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                updateServer("Client connected!");
 
-                    new Thread(() -> {
-                        try {
-                            sleep(3000);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                    DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
-                    DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
+                // Handle client communication in a separate thread
+                new Thread(() -> handleClient(clientSocket)).start();
+            }
+        } catch (IOException e) {
+            updateServer("Error: " + e.getMessage());
+        }
+    }
 
-                    message = dis.readUTF();
-                    updateServer("Message from client: " + message);
+    private void handleClient(Socket clientSocket) {
+        try (DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
+             DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream())) {
 
-                    // Sending a response back to the client
-                    dos.writeUTF("Received: " + message);
-
-                    dis.close();
-                    dos.close();
-
-                } catch (IOException e) {
-                    updateServer("Error: " + e.getMessage());
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+            while (true) {
+                String message = dis.readUTF();
+                if (message.equalsIgnoreCase("exit")) {
+                    updateServer("Client disconnected.");
+                    break;
                 }
-                if (message.equalsIgnoreCase("exit")) break;
-
+                updateServer("Message from client: " + message);
+                dos.writeUTF("Server received: " + message);
             }
         } catch (IOException e) {
             updateServer("Error: " + e.getMessage());
