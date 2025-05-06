@@ -192,28 +192,38 @@ public class MainController implements Initializable {
 
     }
 
-
     private void connectToServer(ActionEvent event) {
+        new Thread(() -> {
+            try (Socket socket = new Socket("localhost", 6666);
+                 DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+                 DataInputStream dis = new DataInputStream(socket.getInputStream())) {
 
+                // Thread to listen for server messages
+                new Thread(() -> {
+                    try {
+                        while (true) {
+                            String response = dis.readUTF();
+                            updateTextClient("Server: " + response);
+                        }
+                    } catch (IOException e) {
+                        updateTextClient("Connection closed.");
+                    }
+                }).start();
 
-        try {
-            socket1 = new Socket("localhost", 6666);
-
-            DataOutputStream dos = new DataOutputStream(socket1.getOutputStream());
-            DataInputStream dis = new DataInputStream(socket1.getInputStream());
-
-            dos.writeUTF(msgText.getText());
-            String response = dis.readUTF();
-            updateTextClient("Server response: " + response + "\n");
-
-            dis.close();
-            dos.close();
-            socket1.close();
-        } catch (Exception e) {
-            updateTextClient("Error: " + e.getMessage() + "\n");
-        }
-
-
+                // Send messages to the server
+                while (true) {
+                    String message = msgText.getText();
+                    if (message.equalsIgnoreCase("exit")) {
+                        dos.writeUTF(message);
+                        break;
+                    }
+                    dos.writeUTF(message);
+                    msgText.clear();
+                }
+            } catch (IOException e) {
+                updateTextClient("Error: " + e.getMessage());
+            }
+        }).start();
     }
 
     private void updateTextClient(String message) {
